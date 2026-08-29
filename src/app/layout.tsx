@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'iLoyalty',
-  description: 'Your loyalty rewards across our hotel group',
+  title: 'iLoyalty — Pilot Hotel Rewards',
+  description: 'Your verified loyalty account across pilot group hotels.',
 }
 
 export default function RootLayout({
