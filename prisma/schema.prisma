@@ -1,0 +1,232 @@
+// This is the Prisma schema for iLoyalty v1.
+// It matches the PRD Section 8 exactly, with no renamed fields or dropped constraints.
+// Additional operational models (SyncLog, MessageLog, ProfileMergeDraft) are added
+// to satisfy the PRD Section 6 requirements for sync logging, staff workflows, and
+// message auditing.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Core PRD Models (Section 8) ────────────────────────────────────────────
+
+model Guest {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?  @unique
+  createdAt DateTime @default(now())
+
+  stays        Stay[]
+  pointsTx     PointsTransaction[]
+  bookings     Booking[]
+  // operational relations
+  mergeSources ProfileMergeDraft[] @relation("MergeSource")
+  mergeTargets ProfileMergeDraft[] @relation("MergeTarget")
+}
+
+model Hotel {
+  id                String  @id @default(cuid())
+  name              String
+  merchantAccountId String
+  active            Boolean @default(true)
+
+  stays    Stay[]
+  bookings Booking[]
+  rooms    Room[]
+  syncLogs SyncLog[]
+}
+
+model Room {
+  id          String  @id @default(cuid())
+  hotelId     String
+  hotel       Hotel   @relation(fields: [hotelId], references: [id])
+  description String
+  active      Boolean @default(true)
+  // embedSyncedAt tracks last time this room's embedding was pushed to pgvector
+  embedSyncedAt DateTime?
+}
+
+model Stay {
+  id                   String   @id @default(cuid())
+  // unique PMS identifier — prevents duplicate ingestion on repeated sync runs (PRD Section 8)
+  pmsRecordId          String   @unique
+  guestId              String
+  guest                Guest    @relation(fields: [guestId], references: [id])
+  hotelId              String
+  hotel                Hotel    @relation(fields: [hotelId], references: [id])
+  checkIn              DateTime
+  checkOut             DateTime
+  accommodationSpend   Decimal  @db.Decimal(12, 2)
+  foodAndBeverageSpend Decimal  @db.Decimal(12, 2)
+  // not eligible for points; tracked for owner reporting only
+  otherSpend           Decimal  @db.Decimal(12, 2)
+  // "iLoyalty" source is required for points eligibility
+  source               String
+  manualEntry          Boolean  @default(false)
+  // required if manualEntry is true; set to owner ID on approval
+  approvedBy           String?
+
+  pointsTransactions PointsTransaction[]
+}
+
+model PointsTransaction {
+  id      String @id @default(cuid())
+  guestId String
+  guest   Guest  @relation(fields: [guestId], references: [id])
+  // required for type "earned" at the application layer
+  stayId  String?
+  stay    Stay?   @relation(fields: [stayId], references: [id])
+  // "earned" or "redeemed"
+  type    String
+  amount  Int
+  // set for "earned" type: createdAt + 365 days; null for "redeemed"
+  expiresAt             DateTime?
+  // captured for "redeemed" type; preserves rule cost at time of use
+  pointsCostAtRedemption Int?
+  createdAt             DateTime @default(now())
+
+  @@index([guestId, type, expiresAt])
+}
+
+model RedemptionRule {
+  id          String  @id @default(cuid())
+  description String
+  pointsCost  Int
+  active      Boolean @default(true)
+  // owner ID; required before rule can be set active
+  approvedBy  String
+}
+
+model LoyaltyConfig {
+  id   String @id @default(cuid())
+  // e.g. 0.02 for 2%; stored as data so rate changes need no deployment
+  earnRate      Decimal  @db.Decimal(6, 4)
+  effectiveFrom DateTime @default(now())
+}
+
+model Booking {
+  id      String        @id @default(cuid())
+  guestId String
+  guest   Guest         @relation(fields: [guestId], references: [id])
+  hotelId String
+  hotel   Hotel         @relation(fields: [hotelId], references: [id])
+  status  BookingStatus @default(PENDING)
+
+  payment Payment?
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Payment {
+  id        String @id @default(cuid())
+  bookingId String @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  amount    Decimal @db.Decimal(12, 2)
+  // "points", "card", or "mixed"
+  method    String
+  // generated client-side per payment attempt; blocks duplicate submissions
+  idempotencyKey String  @unique
+  // from payment provider; blocks duplicate webhook processing
+  providerTxId   String? @unique
+  // never shown as paid until payment provider confirms
+  providerConfirmed Boolean       @default(false)
+  status            PaymentStatus @default(PENDING)
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+// ─── Operational Models (Section 6 requirements) ────────────────────────────
+
+// Tracks every PMS sync run result; surfaces failures on owner dashboard same day
+model SyncLog {
+  id               String        @id @default(cuid())
+  hotelId          String
+  hotel            Hotel         @relation(fields: [hotelId], references: [id])
+  status           SyncLogStatus
+  recordsProcessed Int           @default(0)
+  recordsUpserted  Int           @default(0)
+  errorMessage     String?
+  startedAt        DateTime
+  completedAt      DateTime?
+  createdAt        DateTime      @default(now())
+
+  @@index([hotelId, createdAt])
+}
+
+enum SyncLogStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+// Auditable log of every message or financial statement surfaced to a guest
+model MessageLog {
+  id        String   @id @default(cuid())
+  guestId   String
+  // content of what was displayed (points balance, redemption confirmation, etc.)
+  message   String   @db.Text
+  context   String   // e.g. "balance", "redemption", "expiry-warning"
+  createdAt DateTime @default(now())
+
+  @@index([guestId, createdAt])
+}
+
+// Staff-proposed profile merges; held for owner approval before taking effect
+model ProfileMergeDraft {
+  id           String             @id @default(cuid())
+  sourceGuestId String
+  targetGuestId String
+  sourceGuest  Guest              @relation("MergeSource", fields: [sourceGuestId], references: [id])
+  targetGuest  Guest              @relation("MergeTarget", fields: [targetGuestId], references: [id])
+  status       MergeDraftStatus   @default(PENDING)
+  proposedBy   String             // staff user identifier
+  reviewedBy   String?            // owner ID, set on approval or rejection
+  reviewNote   String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+enum MergeDraftStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ─── Vector Embedding Sync (pgvector support) ────────────────────────────────
+// HotelEmbedding and RoomEmbedding store pgvector embeddings for semantic search.
+// Only active Hotel and Room records are embedded. When a hotel or room is
+// deactivated (active: false), its embedding row is deleted in the same operation.
+// No guest-identifying data appears here under any field including metadata.
+
+model HotelEmbedding {
+  id        String   @id // matches Hotel.id
+  // type: "hotel"; city/region stored for location filtering
+  metadata  Json
+  // vector stored as a 1536-dimension float array (OpenAI text-embedding-3-small)
+  embedding Float[]
+  updatedAt DateTime @updatedAt
+}
+
+model RoomEmbedding {
+  id        String   @id // matches Room.id
+  hotelId   String   // for filtering room results by hotel
+  // type: "room"; city/region stored for location filtering
+  metadata  Json
+  embedding Float[]
+  updatedAt DateTime @updatedAt
+
+  @@index([hotelId])
+}
