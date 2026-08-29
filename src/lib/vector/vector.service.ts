@@ -23,7 +23,10 @@
 import OpenAI from 'openai'
 import { prisma } from '@/lib/db/prisma'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+/** Lazily constructed — avoids module-level throws during Next.js build. */
+function getOpenAIClient(): OpenAI {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 /** Cosine distance above this value means "not confident enough" */
 const CONFIDENCE_THRESHOLD = 0.4
@@ -35,7 +38,7 @@ const CONFIDENCE_THRESHOLD = 0.4
  * Only called for Hotel.description and Room.description — never for guest data.
  */
 async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
+  const response = await getOpenAIClient().embeddings.create({
     model: 'text-embedding-3-small',
     input: text,
   })

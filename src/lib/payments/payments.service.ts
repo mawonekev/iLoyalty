@@ -26,9 +26,12 @@ import { prisma } from '@/lib/db/prisma'
 import { redeemPoints } from '@/lib/points/points.service'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
-  apiVersion: '2026-08-26.dahlia' as any,
-})
+/** Lazily constructed — avoids module-level throws during Next.js build. */
+function getStripe(): Stripe {
+  return new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
+    apiVersion: '2026-08-26.dahlia' as any,
+  })
+}
 
 // ─── Booking creation ─────────────────────────────────────────────────────────
 
@@ -118,7 +121,7 @@ export async function chargePayment(input: ChargePaymentInput): Promise<ChargePa
   if (method === 'card' || method === 'mixed') {
     let paymentIntent: Stripe.PaymentIntent
     try {
-      paymentIntent = await stripe.paymentIntents.create(
+      paymentIntent = await getStripe().paymentIntents.create(
         {
           amount,          // in smallest currency unit (pence)
           currency: 'gbp',

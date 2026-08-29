@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 /**
  * GET /api/discovery/search?q=somewhere+near+Leeds+with+parking
  *

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 /**
  * POST /api/payments/webhook
  *
@@ -18,9 +19,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { confirmPaymentFromWebhook } from '@/lib/payments/payments.service'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
-  apiVersion: '2026-08-26.dahlia' as any,
-})
+/** Lazily constructed — avoids module-level throws during Next.js build. */
+function getStripe(): Stripe {
+  return new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
+    apiVersion: '2026-08-26.dahlia' as any,
+  })
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET ?? ''
