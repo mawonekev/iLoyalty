@@ -73,13 +73,34 @@ export default function DiscoverPage() {
   return (
     <div className="app-container">
       <div style={{ padding: '1.5rem', flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <Link
+            href="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              color: 'var(--text-secondary)',
+              fontSize: '0.8rem',
+              textDecoration: 'none',
+              padding: '0.3rem 0.6rem',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '6px',
+            }}
+          >
+            ← Home
+          </Link>
+          <span className="badge badge-gold">Pilot Group</span>
+        </div>
+
         <header style={{ marginBottom: '1.5rem' }}>
-          <span className="badge badge-gold" style={{ marginBottom: '0.25rem' }}>Pilot Hotel Group</span>
           <h1 style={{ fontSize: '1.5rem' }}>Discover &amp; Book</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            Search by meaning (e.g. &ldquo;quiet room with desk near Leeds&rdquo;).
+            Search by meaning (e.g. &ldquo;quiet room with desk near London&rdquo;).
           </p>
         </header>
+
 
         {/* Semantic Search Input */}
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>

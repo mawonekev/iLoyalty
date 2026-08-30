@@ -58,11 +58,24 @@ export default function BalancePage() {
   return (
     <div className="app-container">
       <div style={{ padding: '1.5rem', flex: 1 }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div>
-            <span className="badge badge-gold" style={{ marginBottom: '0.25rem' }}>iLoyalty Account</span>
-            <h1 style={{ fontSize: '1.5rem' }}>Points Balance</h1>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <Link
+            href="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              color: 'var(--text-secondary)',
+              fontSize: '0.8rem',
+              textDecoration: 'none',
+              padding: '0.3rem 0.6rem',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '6px',
+            }}
+          >
+            ← Home
+          </Link>
           <button
             onClick={() => {
               localStorage.removeItem('iloyalty_guest_id')
@@ -79,7 +92,13 @@ export default function BalancePage() {
           >
             Sign Out
           </button>
+        </div>
+
+        <header style={{ marginBottom: '1.5rem' }}>
+          <span className="badge badge-gold" style={{ marginBottom: '0.25rem' }}>iLoyalty Account</span>
+          <h1 style={{ fontSize: '1.5rem' }}>Points Balance</h1>
         </header>
+
 
         {loading && (
           <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>

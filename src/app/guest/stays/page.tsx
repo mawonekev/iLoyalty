@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { GuestNav } from '@/components/GuestNav'
 
 interface StayItem {
@@ -52,6 +53,42 @@ export default function StaysPage() {
   return (
     <div className="app-container">
       <div style={{ padding: '1.5rem', flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <Link
+            href="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              color: 'var(--text-secondary)',
+              fontSize: '0.8rem',
+              textDecoration: 'none',
+              padding: '0.3rem 0.6rem',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '6px',
+            }}
+          >
+            ← Home
+          </Link>
+          <button
+            onClick={() => {
+              localStorage.removeItem('iloyalty_guest_id')
+              localStorage.removeItem('iloyalty_guest_email')
+              router.push('/signin')
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
+
         <header style={{ marginBottom: '1.5rem' }}>
           <span className="badge badge-gold" style={{ marginBottom: '0.25rem' }}>Pilot Hotel Group</span>
           <h1 style={{ fontSize: '1.5rem' }}>Stay History</h1>
@@ -59,6 +96,7 @@ export default function StaysPage() {
             Verified stays and points earned across group properties.
           </p>
         </header>
+
 
         {loading && (
           <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
