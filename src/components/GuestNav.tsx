@@ -8,6 +8,7 @@ export function GuestNav() {
   const pathname = usePathname()
 
   const navItems = [
+    { href: '/', label: 'Home', icon: '🏠' },
     { href: '/guest/balance', label: 'Balance', icon: '✦' },
     { href: '/guest/stays', label: 'My Stays', icon: '🏨' },
     { href: '/guest/discover', label: 'Discover', icon: '🔍' },

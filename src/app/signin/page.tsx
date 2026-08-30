@@ -8,37 +8,44 @@ export default function SignInPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const signIn = async (emailToUse: string) => {
+    const res = await fetch(`/api/guest/signin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailToUse }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Account not found.')
+    if (data.data?.id) {
+      localStorage.setItem('iloyalty_guest_id', data.data.id)
+      localStorage.setItem('iloyalty_guest_email', data.data.email)
+    }
+    router.push('/guest/balance')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
-
     try {
-      // In Stage 2, signin checks the email exists to set the guest session
-      const res = await fetch(`/api/guest/signin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Account not found with this email.')
-        setLoading(false)
-        return
-      }
-
-      if (data.data?.id) {
-        localStorage.setItem('iloyalty_guest_id', data.data.id)
-        localStorage.setItem('iloyalty_guest_email', data.data.email)
-        router.push('/guest/balance')
-      }
-    } catch {
-      setError('An unexpected error occurred.')
+      await signIn(email)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred.')
       setLoading(false)
+    }
+  }
+
+  const handleDemo = async () => {
+    setError(null)
+    setDemoLoading(true)
+    try {
+      await signIn('demo@iloyalty.test')
+    } catch {
+      setError('Demo account not found. Please run the seed script first: npm run db:seed')
+      setDemoLoading(false)
     }
   }
 
@@ -72,8 +79,24 @@ export default function SignInPage() {
             />
           </div>
 
-          <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: '0.5rem' }}>
+          <button type="submit" className="btn-primary" disabled={loading || demoLoading} style={{ marginTop: '0.5rem' }}>
             {loading ? 'Checking Account...' : 'Continue to My Account'}
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem' }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDemo}
+            disabled={loading || demoLoading}
+            className="btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+          >
+            {demoLoading ? 'Loading...' : '✦ Try Demo Account'}
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '1rem' }}>

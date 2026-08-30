@@ -25,6 +25,7 @@ export function OwnerNav() {
       alignItems: 'center',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <Link href="/owner/login" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 500 }}>Portal</Link>
         <span className="badge badge-gold">Owner Portal</span>
         <span style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
           iLoyalty Group Intelligence

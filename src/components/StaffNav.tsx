@@ -23,6 +23,7 @@ export function StaffNav() {
       alignItems: 'center',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <Link href="/staff/login" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 500 }}>Portal</Link>
         <span className="badge badge-blue">Staff Portal</span>
         <span style={{ fontWeight: 600, fontSize: '1rem' }}>iLoyalty Operations</span>
       </div>

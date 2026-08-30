@@ -121,6 +121,12 @@ export default function SignUpPage() {
               Already have an account?{' '}
               <Link href="/signin" style={{ fontWeight: 600 }}>Sign in</Link>
             </p>
+
+            <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+              <Link href="/signin" style={{ fontSize: '0.8rem', color: 'var(--accent-gold)' }}>
+                ✦ Or explore with the Demo Guest Account →
+              </Link>
+            </div>
           </form>
         )}
       </div>
